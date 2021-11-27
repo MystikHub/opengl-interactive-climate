@@ -113,6 +113,10 @@ void Actor::renderMesh() {
     int matrix_location = glGetUniformLocation(this->shaderProgramID, "model");
     int view_mat_location = glGetUniformLocation(this->shaderProgramID, "view");
     int proj_mat_location = glGetUniformLocation(this->shaderProgramID, "proj");
+
+	// Set the object color
+	int object_color = glGetUniformLocation(this->shaderProgramID, "object_color");
+	glUniform3f(object_color, 1.0f, 0.5f, 0.2f);
     
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::rotate(view, this->camera->rotation.y, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -145,7 +149,6 @@ glm::mat4 Actor::getTransform() {
 	// Get the accumulated transform of all parents and apply this actor's
 	//	transformation
 	//
-	// If we have a parent...
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, this->location);
     model = glm::rotate(model, this->rotation.x, glm::vec3(1.0f, 0.0f, 0.0f));

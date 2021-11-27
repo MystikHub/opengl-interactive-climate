@@ -32,16 +32,13 @@ struct input_state {
 };
 input_state input;
 
-float CAMERA_SPEED = 30;
+float CAMERA_SPEED = 10;
 float MOUSE_SENSITIVITY = 0.5;
 float MESH_TRANSLATE_SPEED = 20;
 
 // vector<Actor> actors;
 Camera camera;
-Actor torso(&camera);
-Actor floor_object(&camera);
-Actor leg_upper(&camera);
-Actor leg_lower(&camera);
+Actor scene(&camera);
 
 chrono::time_point last_time = chrono::high_resolution_clock::time_point::min();
 chrono::time_point start_time = chrono::high_resolution_clock::now();
@@ -154,17 +151,8 @@ void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(shaderProgramID);
 
-    torso.setupBufferObjects();
-    torso.renderMesh();
-
-    floor_object.setupBufferObjects();
-    floor_object.renderMesh();
-
-    leg_upper.setupBufferObjects();
-    leg_upper.renderMesh();
-
-    leg_lower.setupBufferObjects();
-    leg_lower.renderMesh();
+    scene.setupBufferObjects();
+    scene.renderMesh();
 
     glutSwapBuffers();
 }
@@ -184,12 +172,9 @@ void updateScene() {
     for(int i = 0; i < 3; i++) {
         // Camera movement should take into account the direction it's facing
         camera.rotation[i] += input.camera_rotation[i] * MOUSE_SENSITIVITY * delta;
-        torso.location[i] += input.location[i] * MESH_TRANSLATE_SPEED * delta;
 
         input.camera_rotation[i] = 0;
     }
-    leg_upper.rotation.x = sin(elapsed_time * 0.002);
-    leg_lower.rotation.x = sin(elapsed_time * 0.002);
 
     // Camera xz movement
     float camera_direction_offset = 0;
@@ -230,7 +215,7 @@ void updateScene() {
     float z_change = cos(camera.rotation[0] + camera_direction_offset);
 
     camera.location[0] += -1 * x_change * CAMERA_SPEED * delta * moving;
-    camera.location[1] += -1 * input.camera_location[1] * CAMERA_SPEED * delta;
+    // camera.location[1] += -1 * input.camera_location[1] * CAMERA_SPEED * delta;
     camera.location[2] += z_change * CAMERA_SPEED * delta * moving;
 
     // printf("\nangle: %f, xchange: %f, zchange: %f\n", camera.rotation[0], x_change, z_change);
@@ -373,26 +358,10 @@ void init() {
     GLuint shaderProgramID = CompileShaders();
 
     // load teapot mesh into a vertex buffer array
-    torso.shaderProgramID = shaderProgramID;
-    torso.loadMesh("models/deer_torso.dae");
-    // deer_torso.setupBufferObjects();
+    scene.shaderProgramID = shaderProgramID;
+    scene.loadMesh("models/scene.dae");
 
-    floor_object.shaderProgramID = shaderProgramID;
-    floor_object.loadMesh("models/deer_floor.dae");
-    // floor.setupBufferObjects();
-
-    leg_upper.shaderProgramID = shaderProgramID;
-    leg_upper.loadMesh("models/leg_upper.dae");
-    // leg_upper.setupBufferObjects();
-    leg_upper.parent = &torso;
-    leg_upper.location = glm::vec3(-0.45592f, 2.75719f, 1.07808f);
-
-    leg_lower.shaderProgramID = shaderProgramID;
-    leg_lower.loadMesh("models/leg_lower.dae");
-    leg_lower.parent = &leg_upper;
-    leg_lower.location = glm::vec3(0.078969f, -1.03394f, 0.07492f);
-    // leg_lower.location = glm::vec3(-0.078969f, -1.03394f, -2.23108f);
-    // leg_lower.setupBufferObjects();
+    camera.location.y = -1.6;
 }
 
 int main(int argc, char** argv){

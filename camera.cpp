@@ -4,8 +4,8 @@
 #include <glm/ext.hpp>
 
 Camera::Camera() {
-    this->location = glm::vec3(0.0f, 0.0f, -30.0f);
-    this->rotation = glm::vec3(0.0f, 0.0f, -0.0f);
+    this->location = glm::vec3(0.0f, 0.0f, 0.0f);
+    this->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
     this->width = 1920;
     this->height = 1080;

@@ -53,3 +53,7 @@
 # Deer model from turbosquid
 models/deer.fbx
 models/deer.dae
+
+# Temporary rule for large assets
+materials/
+models/
