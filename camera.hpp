@@ -1,8 +1,12 @@
 #ifndef CAMERA_HPP
 #define CAMERA_HPP
 
+#include <vector>
+
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+
+using namespace std;
 
 class Camera {
 public:
@@ -20,6 +24,8 @@ public:
 
     int horizontal_center;
     int vertical_center;
+
+    vector<glm::vec3> lights;
 
     Camera();
     Camera(glm::vec3 location, glm::vec3 rotation, int width, int height);

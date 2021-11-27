@@ -10,6 +10,10 @@
 #include <assimp/scene.h> // collects data
 #include <assimp/postprocess.h> // various extra operations
 
+// Texture loading
+#define STB_IMAGE_IMPLEMENTATION
+#include "headers/stb_image.h"
+
 Actor::Actor(Camera* camera) {
 	this->parent = NULL;
 	this->camera = camera;
@@ -69,6 +73,12 @@ void Actor::loadMesh(string file_name) {
 		}
 	}
 
+	// Add lights
+	for(unsigned int i = 0; i < scene->mNumLights; i++) {
+		aiVector3D l = scene->mLights[0]->mPosition;
+		this->camera->lights.push_back(glm::vec3(l.x, l.y, l.z));
+	}
+
 	this->mesh = modelData;
 }
 
@@ -76,7 +86,7 @@ void Actor::setupBufferObjects() {
 	unsigned int vertex_positions_vbo_id = 0;
 	GLuint loc1 = glGetAttribLocation(shaderProgramID, "vertex_position");
 	GLuint loc2 = glGetAttribLocation(shaderProgramID, "vertex_normal");
-	// GLuint loc3 = glGetAttribLocation(shaderProgramID, "vertex_texture");
+	GLuint loc3 = glGetAttribLocation(shaderProgramID, "vertex_texture");
 
     glGenBuffers(1, &vertex_positions_vbo_id);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_positions_vbo_id);
@@ -87,10 +97,10 @@ void Actor::setupBufferObjects() {
     glBindBuffer(GL_ARRAY_BUFFER, vertex_normals_vbo_id);
 	glBufferData(GL_ARRAY_BUFFER, this->mesh.mPointCount * sizeof(glm::vec3), &this->mesh.mNormals[0], GL_STATIC_DRAW);
 
-    // unsigned int vt_vbo = 0;
-	// glGenBuffers (1, &vt_vbo);
-	// glBindBuffer (GL_ARRAY_BUFFER, vt_vbo);
-	// glBufferData (GL_ARRAY_BUFFER, this->mesh.mTextureCoords * sizeof (glm::vec2), &this->mesh.mTextureCoords[0], GL_STATIC_DRAW);
+    // unsigned int vertex_texture_vbo = 0;
+	// glGenBuffers(1, &vt_vbo);
+	// glBindBuffer(GL_ARRAY_BUFFER, vt_vbo);
+	// glBufferData(GL_ARRAY_BUFFER, this->mesh.mTextureCoords * sizeof (glm::vec2), &this->mesh.mTextureCoords[0], GL_STATIC_DRAW);
     
 	unsigned int vao = 0;
 	glBindVertexArray(vao);
@@ -102,6 +112,31 @@ void Actor::setupBufferObjects() {
     glEnableVertexAttribArray(loc2);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_normals_vbo_id);
     glVertexAttribPointer (loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	// Texturessssssssssssss
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	// Set the texture wrapping/filtering options (on the currently bound texture object)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Load and generate the texture
+	int width, height, nrChannels;
+	unsigned char *data = stbi_load("materials/textures/blue_floor_tiles_01_diff_4k.jpg", &width, &height, &nrChannels, 0);
+	if (data) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	} else {
+		printf("Failed to load texture %s\n", "blue_floor_tiles_01_diff_4k.jpg");
+	}
+	stbi_image_free(data);
+
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(loc3);
+
 
     // glEnableVertexAttribArray (loc3);
 	// glBindBuffer (GL_ARRAY_BUFFER, vt_vbo);
@@ -117,6 +152,14 @@ void Actor::renderMesh() {
 	// Set the object color
 	int object_color = glGetUniformLocation(this->shaderProgramID, "object_color");
 	glUniform3f(object_color, 1.0f, 0.5f, 0.2f);
+
+	// Set the light position
+	int light_position = glGetUniformLocation(this->shaderProgramID, "light_position");
+	glUniform3f(light_position, this->camera->lights[0].x, this->camera->lights[0].y, this->camera->lights[0].z);
+
+	// Pass the camera location
+	int camera_location = glGetUniformLocation(this->shaderProgramID, "camera_location");
+	glUniform3f(camera_location, this->camera->location.x, this->camera->location.y, this->camera->location.z);
     
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::rotate(view, this->camera->rotation.y, glm::vec3(1.0f, 0.0f, 0.0f));

@@ -147,11 +147,10 @@ void display() {
     // tell GL to only draw onto a pixel if the shape is closer to the viewer
     glEnable(GL_DEPTH_TEST); // enable depth-testing
     glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
-    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(shaderProgramID);
 
-    scene.setupBufferObjects();
     scene.renderMesh();
 
     glutSwapBuffers();
@@ -164,7 +163,7 @@ void updateScene() {
         last_time = curr_time;
 
     float delta = chrono::duration_cast<chrono::milliseconds>(curr_time - last_time).count();
-    float elapsed_time = chrono::duration_cast<chrono::milliseconds>(curr_time - start_time).count();
+    // float elapsed_time = chrono::duration_cast<chrono::milliseconds>(curr_time - start_time).count();
     delta = delta * 0.001f;
     last_time = curr_time;
 
@@ -215,7 +214,7 @@ void updateScene() {
     float z_change = cos(camera.rotation[0] + camera_direction_offset);
 
     camera.location[0] += -1 * x_change * CAMERA_SPEED * delta * moving;
-    // camera.location[1] += -1 * input.camera_location[1] * CAMERA_SPEED * delta;
+    camera.location[1] += input.camera_location[1] * CAMERA_SPEED * delta;
     camera.location[2] += z_change * CAMERA_SPEED * delta * moving;
 
     // printf("\nangle: %f, xchange: %f, zchange: %f\n", camera.rotation[0], x_change, z_change);
@@ -360,6 +359,7 @@ void init() {
     // load teapot mesh into a vertex buffer array
     scene.shaderProgramID = shaderProgramID;
     scene.loadMesh("models/scene.dae");
+    scene.setupBufferObjects();
 
     camera.location.y = -1.6;
 }
@@ -368,6 +368,9 @@ int main(int argc, char** argv){
 
     // Set up the window
     glutInit(&argc, argv);
+    // glutInitContextVersion(4, 6);
+    // glutInitContextFlags(GLUT_DEBUG);
+    // glutInitContextFlags(GLUT_FORWARD_COMPATIBLE | GLUT_DEBUG);
     glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
     glutInitWindowSize(camera.width, camera.height);
     glutCreateWindow("OpenGL simple hierarchy");
