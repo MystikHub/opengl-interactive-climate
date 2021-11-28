@@ -32,7 +32,7 @@ struct input_state {
 };
 input_state input;
 
-float CAMERA_SPEED = 10;
+float CAMERA_SPEED = 5;
 float MOUSE_SENSITIVITY = 0.5;
 float MESH_TRANSLATE_SPEED = 20;
 
@@ -114,7 +114,6 @@ GLuint CompileShaders() {
 
     GLint Success = 0;
     GLchar ErrorLog[1024] = { 0 };
-
 
     // After compiling all shader objects and attaching them to the program, we can finally link it
     glLinkProgram(shaderProgramID);
@@ -362,9 +361,6 @@ void init() {
     // load teapot mesh into a vertex buffer array
     scene.shaderProgramID = shaderProgramID;
     scene.loadMesh("models/scene.dae");
-    printf("Camera address = %d\n", &camera);
-    printf("Lights address = %d\n", &camera.lights);
-    printf("Lights[0][0] = %f\n", camera.lights[0][0]);
     scene.setupBufferObjects();
 
     camera.location.y = -1.6;

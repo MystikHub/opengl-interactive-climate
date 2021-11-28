@@ -14,6 +14,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "headers/stb_image.h"
 
+unsigned int load_cubemap(vector<std::string> faces);
+
 Actor::Actor(Camera* camera) {
 	this->parent = NULL;
 	this->camera = camera;
@@ -87,10 +89,6 @@ void Actor::loadMesh(string file_name) {
 }
 
 void Actor::setupBufferObjects() {
-    printf("Camera address = %d\n", &this->camera);
-    printf("Lights address = %d\n", &this->camera->lights);
-    printf("Lights[0][0] = %f\n", this->camera->lights[0][0]);
-
 	unsigned int vertex_positions_vbo_id = 0;
 	GLuint loc1 = glGetAttribLocation(shaderProgramID, "vertex_position");
 	GLuint loc2 = glGetAttribLocation(shaderProgramID, "vertex_normal");
@@ -145,6 +143,17 @@ void Actor::setupBufferObjects() {
 	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(loc3);
 
+	// Skybox
+	vector<string> faces = {
+		"materials/cubemap/posx.jpg",
+		"materials/cubemap/negx.jpg",
+		"materials/cubemap/posy.jpg",
+		"materials/cubemap/negy.jpg",
+		"materials/cubemap/posz.jpg",
+		"materials/cubemap/negz.jpg"
+	};
+	unsigned int cubemap_texture = load_cubemap(faces);
+	
 
     // glEnableVertexAttribArray (loc3);
 	// glBindBuffer (GL_ARRAY_BUFFER, vt_vbo);
@@ -162,22 +171,22 @@ void Actor::renderMesh() {
 	glUniform3f(object_color, 1.0f, 0.5f, 0.2f);
 
 	// Set the light positions
-	GLfloat** lights = new GLfloat*[this->camera->lights.size()];
+	GLfloat* lights = new GLfloat[this->camera->lights.size() * 3];
 	for(int i = 0; i < this->camera->lights.size(); i++) {
-		lights[i] = new GLfloat[3];
-		lights[i][0] = this->camera->lights[i][0];
-		lights[i][1] = this->camera->lights[i][1];
-		lights[i][2] = this->camera->lights[i][2];
+		lights[i * 3] = this->camera->lights[i][0];
+		lights[(i * 3) + 1] = this->camera->lights[i][1];
+		lights[(i * 3) + 2] = this->camera->lights[i][2];
 	}
 	int light_positions = glGetUniformLocation(this->shaderProgramID, "light_positions");
-	glUniform3fv(light_positions, this->camera->lights.size(), &lights[0][0]);
+	glUniform3fv(light_positions, this->camera->lights.size(), &lights[0]);
 
 	int n_lights = glGetUniformLocation(this->shaderProgramID, "n_lights");
-	glUniform1i(n_lights, this->camera->lights.size());
+	GLint light_count = this->camera->lights.size();
+	glUniform1i(n_lights, light_count);
 
 	// Pass the camera location
 	int camera_location = glGetUniformLocation(this->shaderProgramID, "camera_location");
-	glUniform3f(camera_location, this->camera->location.x, this->camera->location.y, this->camera->location.z);
+	glUniform3f(camera_location, -this->camera->location.x, -this->camera->location.y, -this->camera->location.z);
     
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::rotate(view, this->camera->rotation.y, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -224,3 +233,75 @@ glm::mat4 Actor::getTransform() {
 
 	return model;
 }
+
+unsigned int load_cubemap(vector<std::string> faces) {
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++) {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data) {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+                         0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+            );
+            stbi_image_free(data);
+        } else {
+            printf("Cubemap tex failed to load at path: %s\n", faces[i]);
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}
+
+float skybox_vertices[] = {
+    // positions          
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f
+};

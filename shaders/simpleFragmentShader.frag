@@ -6,7 +6,6 @@ in vec3 normal;
 in vec3 fragment_position;
 in vec2 texture_coordinates;
 
-uniform vec3 object_color;
 uniform sampler2D texture1;
 
 // Ambient variables
