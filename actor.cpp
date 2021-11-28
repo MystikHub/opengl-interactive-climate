@@ -103,10 +103,10 @@ void Actor::setupBufferObjects() {
     glBindBuffer(GL_ARRAY_BUFFER, vertex_normals_vbo_id);
 	glBufferData(GL_ARRAY_BUFFER, this->mesh.mPointCount * sizeof(glm::vec3), &this->mesh.mNormals[0], GL_STATIC_DRAW);
 
-    // unsigned int vertex_texture_vbo = 0;
-	// glGenBuffers(1, &vt_vbo);
-	// glBindBuffer(GL_ARRAY_BUFFER, vt_vbo);
-	// glBufferData(GL_ARRAY_BUFFER, this->mesh.mTextureCoords * sizeof (glm::vec2), &this->mesh.mTextureCoords[0], GL_STATIC_DRAW);
+    GLuint vertex_texture_vbo_id = 0;
+	glGenBuffers(1, &vertex_texture_vbo_id);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_texture_vbo_id);
+	glBufferData(GL_ARRAY_BUFFER, this->mesh.mPointCount * sizeof (glm::vec2), &this->mesh.mTextureCoords[0], GL_STATIC_DRAW);
     
 	unsigned int vao = 0;
 	glBindVertexArray(vao);
@@ -153,11 +153,10 @@ void Actor::setupBufferObjects() {
 		"materials/cubemap/negz.jpg"
 	};
 	unsigned int cubemap_texture = load_cubemap(faces);
-	
 
-    // glEnableVertexAttribArray (loc3);
-	// glBindBuffer (GL_ARRAY_BUFFER, vt_vbo);
-	// glVertexAttribPointer (loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray (loc3);
+	glBindBuffer (GL_ARRAY_BUFFER, vertex_texture_vbo_id);
+	glVertexAttribPointer (loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 }
 
 void Actor::renderMesh() {
