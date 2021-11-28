@@ -37,7 +37,7 @@ float MOUSE_SENSITIVITY = 0.5;
 float MESH_TRANSLATE_SPEED = 20;
 
 // vector<Actor> actors;
-Camera camera;
+Camera camera = Camera();
 Actor scene(&camera);
 
 chrono::time_point last_time = chrono::high_resolution_clock::time_point::min();
@@ -169,11 +169,14 @@ void updateScene() {
 
     // Handle kb&m input for input x, y, and z (iterator i)
     for(int i = 0; i < 3; i++) {
-        // Camera movement should take into account the direction it's facing
         camera.rotation[i] += input.camera_rotation[i] * MOUSE_SENSITIVITY * delta;
 
         input.camera_rotation[i] = 0;
     }
+    if(camera.rotation.y > M_PI / 2)
+        camera.rotation.y = M_PI / 2;
+    else if(camera.rotation.y < -M_PI / 2)
+        camera.rotation.y = -M_PI / 2;
 
     // Camera xz movement
     float camera_direction_offset = 0;
@@ -359,6 +362,9 @@ void init() {
     // load teapot mesh into a vertex buffer array
     scene.shaderProgramID = shaderProgramID;
     scene.loadMesh("models/scene.dae");
+    printf("Camera address = %d\n", &camera);
+    printf("Lights address = %d\n", &camera.lights);
+    printf("Lights[0][0] = %f\n", camera.lights[0][0]);
     scene.setupBufferObjects();
 
     camera.location.y = -1.6;
@@ -368,7 +374,7 @@ int main(int argc, char** argv){
 
     // Set up the window
     glutInit(&argc, argv);
-    // glutInitContextVersion(4, 6);
+    // glutInitContextVersion(3, 3);
     // glutInitContextFlags(GLUT_DEBUG);
     // glutInitContextFlags(GLUT_FORWARD_COMPATIBLE | GLUT_DEBUG);
     glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);

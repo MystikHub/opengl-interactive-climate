@@ -31,6 +31,8 @@ public:
     ModelData mesh;
     GLuint shaderProgramID;
 
+    vector<GLfloat*> lights;
+
     Actor(Camera* camera);
     Camera* camera;
 

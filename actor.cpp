@@ -75,14 +75,22 @@ void Actor::loadMesh(string file_name) {
 
 	// Add lights
 	for(unsigned int i = 0; i < scene->mNumLights; i++) {
-		aiVector3D l = scene->mLights[0]->mPosition;
-		this->camera->lights.push_back(glm::vec3(l.x, l.y, l.z));
+		aiVector3D l = scene->mLights[i]->mPosition;
+		GLfloat* light_coordinates = new GLfloat[3];
+		light_coordinates[0] = l.x;
+		light_coordinates[1] = l.y;
+		light_coordinates[2] = l.z;
+		this->camera->lights.push_back(light_coordinates);
 	}
 
 	this->mesh = modelData;
 }
 
 void Actor::setupBufferObjects() {
+    printf("Camera address = %d\n", &this->camera);
+    printf("Lights address = %d\n", &this->camera->lights);
+    printf("Lights[0][0] = %f\n", this->camera->lights[0][0]);
+
 	unsigned int vertex_positions_vbo_id = 0;
 	GLuint loc1 = glGetAttribLocation(shaderProgramID, "vertex_position");
 	GLuint loc2 = glGetAttribLocation(shaderProgramID, "vertex_normal");
@@ -153,9 +161,19 @@ void Actor::renderMesh() {
 	int object_color = glGetUniformLocation(this->shaderProgramID, "object_color");
 	glUniform3f(object_color, 1.0f, 0.5f, 0.2f);
 
-	// Set the light position
-	int light_position = glGetUniformLocation(this->shaderProgramID, "light_position");
-	glUniform3f(light_position, this->camera->lights[0].x, this->camera->lights[0].y, this->camera->lights[0].z);
+	// Set the light positions
+	GLfloat** lights = new GLfloat*[this->camera->lights.size()];
+	for(int i = 0; i < this->camera->lights.size(); i++) {
+		lights[i] = new GLfloat[3];
+		lights[i][0] = this->camera->lights[i][0];
+		lights[i][1] = this->camera->lights[i][1];
+		lights[i][2] = this->camera->lights[i][2];
+	}
+	int light_positions = glGetUniformLocation(this->shaderProgramID, "light_positions");
+	glUniform3fv(light_positions, this->camera->lights.size(), &lights[0][0]);
+
+	int n_lights = glGetUniformLocation(this->shaderProgramID, "n_lights");
+	glUniform1i(n_lights, this->camera->lights.size());
 
 	// Pass the camera location
 	int camera_location = glGetUniformLocation(this->shaderProgramID, "camera_location");

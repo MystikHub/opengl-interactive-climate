@@ -1,5 +1,7 @@
 #version 330
 
+#define MAX_LIGHTS 128
+
 in vec3 normal;
 in vec3 fragment_position;
 in vec2 texture_coordinates;
@@ -19,31 +21,40 @@ vec3 specular_light_color = vec3(1.0, 1.0, 1.0);
 float specular_strength = 1.0;
 float specular_coefficient = 100.0;
 
-uniform vec3 light_position;
+// Lights
+uniform int n_lights;
+uniform vec3 light_positions[MAX_LIGHTS];
 vec3 light_intensity = vec3(1.0, 1.0, 1.0);
 
 uniform vec3 camera_location;
 out vec4 FragColor;
 
 void main(){
-	// Ambient light
-	vec3 ambient = ambient_strength * ambient_light_color;
+	// Need to calculate lighting for all light sources
+	vec3 total_lighting = vec3(0.0, 0.0, 0.0);
 
-	// Diffuse light
-	vec3 norm = normalize(normal);
-	vec3 light_direction = normalize(light_position - fragment_position);
-	float diff = max(dot(norm, light_direction), 0.0);
-	vec3 diffuse = diff * diffuse_light_color;
+	for(int i = 0; i < n_lights; i++) {
+		// Ambient light
+		vec3 ambient = ambient_strength * ambient_light_color;
 
-	// Specularity
-	vec3 view_dir = normalize(camera_location - fragment_position);
-	vec3 reflection_direction = reflect(-light_direction, norm);
-	float specular_dot = max(dot(view_dir, reflection_direction), 0.0);
-	float spec = pow(specular_dot, specular_coefficient);
-	vec3 specular = spec * specular_strength * specular_light_color;
+		// Diffuse light
+		vec3 norm = normalize(normal);
+		vec3 light_direction = normalize(light_positions[i] - fragment_position);
+		float diff = max(dot(norm, light_direction), 0.0);
+		vec3 diffuse = diff * diffuse_light_color;
 
-	vec4 new_object_color = texture(texture1, texture_coordinates);
-	FragColor = vec4((specular + ambient + diffuse), 1.0) * new_object_color;
+		// Specularity
+		vec3 view_dir = normalize(camera_location - fragment_position);
+		vec3 reflection_direction = reflect(-light_direction, norm);
+		float specular_dot = max(dot(view_dir, reflection_direction), 0.0);
+		float spec = pow(specular_dot, specular_coefficient);
+		vec3 specular = spec * specular_strength * specular_light_color;
+
+		total_lighting += (specular + ambient + diffuse);
+	}
+
+	vec4 texture_color = texture(texture1, texture_coordinates);
+	FragColor = vec4(total_lighting, 1.0) * texture_color;
 
 	// FragColor = vec4(final_lighting, 1.0);
 }
