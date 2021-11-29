@@ -6,6 +6,9 @@
 #include <sstream>
 #include <string> 
 #include <vector>
+// Random numbers
+#include <stdlib.h>
+#include <time.h>
 
 // #include "maths_funcs.h" //Anton's math class
 #include <glm/glm.hpp>
@@ -15,6 +18,8 @@
 
 #include "actor.hpp"
 #include "camera.hpp"
+#include "actors/deer_leg.hpp"
+#include "actors/bird.hpp"
 
 // Macro for indexing vertex buffer
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
@@ -146,7 +151,7 @@ void display() {
     // tell GL to only draw onto a pixel if the shape is closer to the viewer
     glEnable(GL_DEPTH_TEST); // enable depth-testing
     glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
-    glClearColor(0.8f, 0.8f, 1.0f, 1.0f);
+    glClearColor(0.9f, 0.9f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(shaderProgramID);
 
@@ -164,8 +169,11 @@ void updateScene() {
         last_time = curr_time;
 
     float delta = chrono::duration_cast<chrono::milliseconds>(curr_time - last_time).count();
-    // float elapsed_time = chrono::duration_cast<chrono::milliseconds>(curr_time - start_time).count();
-    delta_seconds = delta * 0.001f;
+
+    // Sent to each actor's update function
+    float delta_seconds = delta * 0.001f;
+    float curr_time_seconds = chrono::duration_cast<chrono::milliseconds>(curr_time - start_time).count() * 0.001f;
+
     last_time = curr_time;
 
     // Handle kb&m input for input x, y, and z (iterator i)
@@ -222,8 +230,8 @@ void updateScene() {
     camera.location[2] += z_change * CAMERA_SPEED * delta_seconds * moving;
 
     // Notify actors that the world has updated
-    for(int i = 0; i < actors.size(); i++) {
-        actors[i].update(curr_time, delta_seconds);
+    for(unsigned int i = 0; i < actors.size(); i++) {
+        actors[i]->update(curr_time_seconds, delta_seconds, actors);
     }
 
     // Draw the next frame
@@ -360,13 +368,16 @@ void init() {
     // Set up the shaders
     GLuint shaderProgramID = CompileShaders();
 
+    printf("Loading floor...");
     Actor* floor = new Actor(&camera);
     floor->shaderProgramID = shaderProgramID;
     floor->diffuse_texture = "materials/textures/blue_floor_tiles_01_diff_4k.jpg";
+    floor->specularity = 256.0f;
     floor->loadMesh("models/floor.dae");
     floor->setupBufferObjects();
     actors.push_back(floor);
 
+    printf("Loading benches wood...");
     Actor* benches_wood = new Actor(&camera);
     benches_wood->shaderProgramID = shaderProgramID;
     benches_wood->diffuse_texture = "materials/textures/weathered_brown_planks_diff_4k.jpg";
@@ -374,21 +385,25 @@ void init() {
     benches_wood->setupBufferObjects();
     actors.push_back(benches_wood);
 
+    printf("Loading planter and walls...");
     Actor* planter_and_walls = new Actor(&camera);
     planter_and_walls->shaderProgramID = shaderProgramID;
     planter_and_walls->diffuse_texture = "materials/textures/concrete_floor_worn_001_diff_4k.jpg";
     planter_and_walls->loadMesh("models/planter_and_walls.dae");
+    planter_and_walls->specularity = 128.0f;
     planter_and_walls->setupBufferObjects();
     actors.push_back(planter_and_walls);
 
+    printf("Loading bench metal...");
     Actor* bench_metal = new Actor(&camera);
     bench_metal->shaderProgramID = shaderProgramID;
     bench_metal->diffuse_texture = "materials/textures/Metal038_4K_Color.jpg";
     bench_metal->loadMesh("models/bench_metal.dae");
-    bench_metal->specularity = 128.0f;
+    bench_metal->specularity = 512.0f;
     bench_metal->setupBufferObjects();
     actors.push_back(bench_metal);
 
+    printf("Loading mountain...");
     Actor* mountain = new Actor(&camera);
     mountain->shaderProgramID = shaderProgramID;
     mountain->diffuse_texture = "materials/textures/13_c.jpg";
@@ -396,22 +411,26 @@ void init() {
     mountain->setupBufferObjects();
     actors.push_back(mountain);
 
+    printf("Loading bird...");
     Actor* bird = new Actor(&camera);
     bird->shaderProgramID = shaderProgramID;
     bird->diffuse_texture = "materials/textures/Metal038_4K_Color.jpg";
-    bird->loadMesh("models/bird.dae");
+    bird->loadMesh("models/bird-static.dae");
     bird->setupBufferObjects();
-    // actors.push_back(bird);
+    actors.push_back(bird);
 
+    printf("Loading deer torso...");
     Actor* deer_torso = new Actor(&camera);
     deer_torso->shaderProgramID = shaderProgramID;
     deer_torso->loadMesh("models/deer-torso.dae");
     deer_torso->diffuse_texture = "materials/textures/doe-body-1.jpg";
-    deer_torso->location.z = 3.5;
+    deer_torso->location.z = 7;
+    deer_torso->rotation.y = M_PI;
     deer_torso->setupBufferObjects();
     actors.push_back(deer_torso);
 
-    Actor* deer_leg_upper = new Actor(&camera);
+    printf("Loading deer leg upper...");
+    DeerLeg* deer_leg_upper = new DeerLeg(&camera);
     deer_leg_upper->shaderProgramID = shaderProgramID;
     deer_leg_upper->loadMesh("models/deer-leg-upper.dae");
     deer_leg_upper->diffuse_texture = "materials/textures/doe-body-2.jpg";
@@ -420,7 +439,8 @@ void init() {
     deer_leg_upper->setupBufferObjects();
     actors.push_back(deer_leg_upper);
 
-    Actor* deer_leg_lower = new Actor(&camera);
+    printf("Loading deer leg lower...");
+    DeerLeg* deer_leg_lower = new DeerLeg(&camera);
     deer_leg_lower->shaderProgramID = shaderProgramID;
     deer_leg_lower->loadMesh("models/deer-leg-lower.dae");
     deer_leg_lower->diffuse_texture = "materials/textures/doe-body-3.jpg";
@@ -429,6 +449,7 @@ void init() {
     deer_leg_lower->setupBufferObjects();
     actors.push_back(deer_leg_lower);
 
+    printf("Loading deer head...");
     Actor* deer_head = new Actor(&camera);
     deer_head->shaderProgramID = shaderProgramID;
     deer_head->loadMesh("models/deer-head.dae");
@@ -438,12 +459,47 @@ void init() {
     deer_head->setupBufferObjects();
     actors.push_back(deer_head);
 
+    printf("Loading planter soil...");
     Actor* planter_soil = new Actor(&camera);
     planter_soil->shaderProgramID = shaderProgramID;
     planter_soil->loadMesh("models/planter_soil.dae");
     planter_soil->diffuse_texture = "materials/textures/dry_mud_field_001_diff_4k.jpg";
+    planter_soil->specularity = 4.0f;
     planter_soil->setupBufferObjects();
     actors.push_back(planter_soil);
+
+    printf("Setting up bird crowd...");
+    // Spawn some birds for a crowd
+    // Don't reload the data each time
+    ModelData* bird_model;
+    bool bird_model_loaded = false;
+
+    // Bounds for birds' starting positions
+    // Box is 10x10x7m
+    glm::vec3 birds_start = glm::vec3(-5.0f, 7.0f, -5.0f);
+    glm::vec3 birds_end = glm::vec3(5.0f, 1.0f, 5.0f);
+    srand(0);               // Debug seed, TODO: remove before submission
+
+    for(int i = 0; i < 20; i++) {
+        Bird* bird = new Bird(&camera);
+        bird->shaderProgramID = shaderProgramID;
+        if(!bird_model_loaded) {
+            bird->loadMesh("models/bird.dae");
+            bird_model = bird->mesh;
+            bird_model_loaded = true;
+        } else {
+            bird->mesh = bird_model;
+        }
+        bird->diffuse_texture = "materials/textures/Metal038_4K_Color.jpg";
+        bird->setupBufferObjects();
+
+        // Bird starting location
+        bird->location.x = birds_start.x + (((float) rand() / (float) RAND_MAX) * birds_end.x);
+        bird->location.y = birds_start.y + (((float) rand() / (float) RAND_MAX) * birds_end.y);
+        bird->location.z = birds_start.z + (((float) rand() / (float) RAND_MAX) * birds_end.z);
+
+        actors.push_back(bird);
+    }
 
     camera.location.y = -1.6;
 }

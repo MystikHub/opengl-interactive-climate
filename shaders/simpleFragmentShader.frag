@@ -9,21 +9,20 @@ in vec2 texture_coordinates;
 uniform sampler2D texture1;
 
 // Ambient variables
-vec3 light_color = vec3(0.5, 0.5, 0.5);
-float ambient_strength = 0.5;
+vec3 light_color = vec3(1.0, 1.0, 1.0);
+float ambient_strength = 0.1;
 
 // Diffuse variables
 float diffuse_strength = 0.5;
 
 // Specular variables
 vec3 specular_light_color = vec3(1.0, 1.0, 1.0);
-float specular_strength = 1.0;
+float specular_strength = 1;
 uniform float specularity;
 
 // Lights
 uniform int n_lights;
 uniform vec3 light_positions[MAX_LIGHTS];
-vec3 light_intensity = vec3(1.0, 1.0, 1.0);
 
 uniform vec3 camera_location;
 out vec4 FragColor;
@@ -49,11 +48,10 @@ void main(){
 		float spec = pow(specular_dot, specularity);
 		vec3 specular = spec * specular_strength * light_color;
 
+		// diffuse = vec3(0.0, 0.0, 0.0);
 		total_lighting += (specular + diffuse);
 	}
 
 	vec4 texture_color = texture(texture1, texture_coordinates);
 	FragColor = vec4(total_lighting + ambient, 1.0) * texture_color;
-
-	// FragColor = vec4(final_lighting + ambient , 1.0);
 }

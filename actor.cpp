@@ -26,8 +26,9 @@ Actor::Actor(Camera* camera) {
 	this->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 	this->scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
-	this->specularity = 16;
+	this->specularity = 64;
 	this->diffuse_texture = "";
+	this->actor_type = ActorType::Default;
 }
 
 void Actor::loadMesh(string file_name) {
@@ -47,29 +48,30 @@ void Actor::loadMesh(string file_name) {
 
 	if (!scene) {
 		fprintf(stderr, "ERROR: reading mesh %s\n", file_name.c_str());
-		this->mesh = modelData;
+		this->mesh = new ModelData();
 	}
 
 	printf("  %i materials\n", scene->mNumMaterials);
 	printf("  %i meshes\n", scene->mNumMeshes);
 	printf("  %i textures\n", scene->mNumTextures);
 
+	this->mesh = new ModelData;
 	for (unsigned int m_i = 0; m_i < scene->mNumMeshes; m_i++) {
 		const aiMesh* mesh = scene->mMeshes[m_i];
 		printf("    %i vertices in mesh\n", mesh->mNumVertices);
-		modelData.mPointCount += mesh->mNumVertices;
+		this->mesh->mPointCount += mesh->mNumVertices;
 		for (unsigned int v_i = 0; v_i < mesh->mNumVertices; v_i++) {
 			if (mesh->HasPositions()) {
 				const aiVector3D* vp = &(mesh->mVertices[v_i]);
-				modelData.mVertices.push_back(glm::vec3(vp->x, vp->y, vp->z));
+				this->mesh->mVertices.push_back(glm::vec3(vp->x, vp->y, vp->z));
 			}
 			if (mesh->HasNormals()) {
 				const aiVector3D* vn = &(mesh->mNormals[v_i]);
-				modelData.mNormals.push_back(glm::vec3(vn->x, vn->y, vn->z));
+				this->mesh->mNormals.push_back(glm::vec3(vn->x, vn->y, vn->z));
 			}
 			if (mesh->HasTextureCoords(0)) {
 				const aiVector3D* vt = &(mesh->mTextureCoords[0][v_i]);
-				modelData.mTextureCoords.push_back(glm::vec2(vt->x, vt->y));
+				this->mesh->mTextureCoords.push_back(glm::vec2(vt->x, vt->y));
 			}
 			if (mesh->HasTangentsAndBitangents()) {
 				/* You can extract tangents and bitangents here              */
@@ -89,8 +91,6 @@ void Actor::loadMesh(string file_name) {
 		light_coordinates[2] = l.z;
 		this->camera->lights.push_back(light_coordinates);
 	}
-
-	this->mesh = modelData;
 }
 
 void Actor::setupBufferObjects() {
@@ -104,19 +104,19 @@ void Actor::setupBufferObjects() {
 
     glGenBuffers(1, &vertex_positions_vbo_id);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_positions_vbo_id);
-	glBufferData(GL_ARRAY_BUFFER, this->mesh.mPointCount * sizeof(glm::vec3), &this->mesh.mVertices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, this->mesh->mPointCount * sizeof(glm::vec3), &this->mesh->mVertices[0], GL_STATIC_DRAW);
 	this->vertex_positions_vbo_id = vertex_positions_vbo_id;
 
     unsigned int vertex_normals_vbo_id = 0;
     glGenBuffers(1, &vertex_normals_vbo_id);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_normals_vbo_id);
-	glBufferData(GL_ARRAY_BUFFER, this->mesh.mPointCount * sizeof(glm::vec3), &this->mesh.mNormals[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, this->mesh->mPointCount * sizeof(glm::vec3), &this->mesh->mNormals[0], GL_STATIC_DRAW);
 	this->vertex_normals_vbo_id = vertex_normals_vbo_id;
 
     unsigned int vertex_texture_vbo_id = 0;
 	glGenBuffers(1, &vertex_texture_vbo_id);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_texture_vbo_id);
-	glBufferData(GL_ARRAY_BUFFER, this->mesh.mPointCount * sizeof (glm::vec2), &this->mesh.mTextureCoords[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, this->mesh->mPointCount * sizeof (glm::vec2), &this->mesh->mTextureCoords[0], GL_STATIC_DRAW);
 	this->vertex_texture_vbo_id = vertex_texture_vbo_id;
     
 	unsigned int vao = 0;
@@ -166,7 +166,7 @@ void Actor::setupBufferObjects() {
 		"materials/cubemap/posz.jpg",
 		"materials/cubemap/negz.jpg"
 	};
-	unsigned int cubemap_texture = load_cubemap(faces);
+	// unsigned int cubemap_texture = load_cubemap(faces);
 }
 
 void Actor::renderMesh() {
@@ -237,7 +237,7 @@ void Actor::renderMesh() {
     glUniformMatrix4fv(proj_mat_location, 1, GL_FALSE, &projection[0][0]);
     glUniformMatrix4fv(view_mat_location, 1, GL_FALSE, &view[0][0]);
     glUniformMatrix4fv(matrix_location, 1, GL_FALSE, &model[0][0]);
-    glDrawArrays(GL_TRIANGLES, 0, this->mesh.mPointCount);
+    glDrawArrays(GL_TRIANGLES, 0, this->mesh->mPointCount);
 }
 
 glm::mat4 Actor::getTransform() {
@@ -261,7 +261,7 @@ glm::mat4 Actor::getTransform() {
 }
 
 // Empty function, made useful by subclasses
-void Actor::update(chrono::time_point current_time, float delta_seconds) {
+void Actor::update(float current_time_seconds, float delta_seconds, vector<Actor*> actors) {
 
 }
 

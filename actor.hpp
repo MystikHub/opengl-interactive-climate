@@ -20,6 +20,11 @@ typedef struct {
 	std::vector<glm::vec2> mTextureCoords;
 } ModelData;
 
+enum ActorType {
+    Default,
+    BirdCrowd
+};
+
 class Actor {
 
 public:
@@ -29,7 +34,7 @@ public:
     glm::vec3 rotation;
     glm::vec3 scale;
 
-    ModelData mesh;
+    ModelData* mesh;
     GLuint shaderProgramID;
 
     unsigned int vertex_positions_vbo_id;
@@ -47,8 +52,9 @@ public:
 
     Actor(Camera* camera);
     Camera* camera;
+    ActorType actor_type;
 
-    void update(chrono::time_point current_time, float delta_seconds);
+    virtual void update(float current_time_seconds, float delta_seconds, vector<Actor*> actors);
     void loadMesh(string mesh_path);
     void setupBufferObjects();
     void renderMesh();
