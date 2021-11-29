@@ -1,6 +1,7 @@
 #ifndef ACTOR_HPP
 #define ACTOR_HPP
 
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -31,11 +32,23 @@ public:
     ModelData mesh;
     GLuint shaderProgramID;
 
-    vector<GLfloat*> lights;
+    unsigned int vertex_positions_vbo_id;
+    unsigned int vertex_normals_vbo_id;
+    unsigned int vertex_texture_vbo_id;
+    unsigned int texture_id;
+    unsigned int attr_positions;
+    unsigned int attr_normals;
+    unsigned int attr_texture;
+    unsigned int vao_id;
+
+    string diffuse_texture;
+    string normal_texture;
+    float specularity;
 
     Actor(Camera* camera);
     Camera* camera;
 
+    void update(chrono::time_point current_time, float delta_seconds);
     void loadMesh(string mesh_path);
     void setupBufferObjects();
     void renderMesh();

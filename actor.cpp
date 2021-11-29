@@ -1,6 +1,8 @@
 #include "actor.hpp"
 #include "camera.hpp"
 
+#include <chrono>
+
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <GL/glew.h>
@@ -23,6 +25,9 @@ Actor::Actor(Camera* camera) {
 	this->location = glm::vec3(0.0f, 0.0f, 0.0f);
 	this->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 	this->scale = glm::vec3(1.0f, 1.0f, 1.0f);
+
+	this->specularity = 16;
+	this->diffuse_texture = "";
 }
 
 void Actor::loadMesh(string file_name) {
@@ -93,35 +98,43 @@ void Actor::setupBufferObjects() {
 	GLuint loc1 = glGetAttribLocation(shaderProgramID, "vertex_position");
 	GLuint loc2 = glGetAttribLocation(shaderProgramID, "vertex_normal");
 	GLuint loc3 = glGetAttribLocation(shaderProgramID, "vertex_texture");
+	this->attr_positions = loc1;
+	this->attr_normals = loc2;
+	this->attr_texture = loc3;
 
     glGenBuffers(1, &vertex_positions_vbo_id);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_positions_vbo_id);
 	glBufferData(GL_ARRAY_BUFFER, this->mesh.mPointCount * sizeof(glm::vec3), &this->mesh.mVertices[0], GL_STATIC_DRAW);
+	this->vertex_positions_vbo_id = vertex_positions_vbo_id;
 
-    GLuint vertex_normals_vbo_id = 0;
+    unsigned int vertex_normals_vbo_id = 0;
     glGenBuffers(1, &vertex_normals_vbo_id);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_normals_vbo_id);
 	glBufferData(GL_ARRAY_BUFFER, this->mesh.mPointCount * sizeof(glm::vec3), &this->mesh.mNormals[0], GL_STATIC_DRAW);
+	this->vertex_normals_vbo_id = vertex_normals_vbo_id;
 
-    GLuint vertex_texture_vbo_id = 0;
+    unsigned int vertex_texture_vbo_id = 0;
 	glGenBuffers(1, &vertex_texture_vbo_id);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_texture_vbo_id);
 	glBufferData(GL_ARRAY_BUFFER, this->mesh.mPointCount * sizeof (glm::vec2), &this->mesh.mTextureCoords[0], GL_STATIC_DRAW);
+	this->vertex_texture_vbo_id = vertex_texture_vbo_id;
     
 	unsigned int vao = 0;
 	glBindVertexArray(vao);
+	this->vao_id = vao;
 
     glEnableVertexAttribArray(loc1);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_positions_vbo_id);
-    glVertexAttribPointer (loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glVertexAttribPointer(loc1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
     glEnableVertexAttribArray(loc2);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_normals_vbo_id);
-    glVertexAttribPointer (loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glVertexAttribPointer(loc2, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
 	// Texturessssssssssssss
 	unsigned int texture;
 	glGenTextures(1, &texture);
+	this->texture_id = texture;
 	glBindTexture(GL_TEXTURE_2D, texture);
 	// Set the texture wrapping/filtering options (on the currently bound texture object)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -131,17 +144,18 @@ void Actor::setupBufferObjects() {
 
 	// Load and generate the texture
 	int width, height, nrChannels;
-	unsigned char *data = stbi_load("materials/textures/blue_floor_tiles_01_diff_4k.jpg", &width, &height, &nrChannels, 0);
+	unsigned char *data = stbi_load(this->diffuse_texture.c_str(), &width, &height, &nrChannels, 0);
 	if (data) {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	} else {
-		printf("Failed to load texture %s\n", "blue_floor_tiles_01_diff_4k.jpg");
+		printf("Failed to load texture %s\n", this->diffuse_texture.c_str());
 	}
 	stbi_image_free(data);
 
-	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 	glEnableVertexAttribArray(loc3);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_texture_vbo_id);
+	glVertexAttribPointer(loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 
 	// Skybox
 	vector<string> faces = {
@@ -153,25 +167,33 @@ void Actor::setupBufferObjects() {
 		"materials/cubemap/negz.jpg"
 	};
 	unsigned int cubemap_texture = load_cubemap(faces);
-
-    glEnableVertexAttribArray (loc3);
-	glBindBuffer (GL_ARRAY_BUFFER, vertex_texture_vbo_id);
-	glVertexAttribPointer (loc3, 2, GL_FLOAT, GL_FALSE, 0, NULL);
 }
 
 void Actor::renderMesh() {
+	// Enable the data we need
+	glEnableVertexAttribArray(this->attr_positions);
+	glBindBuffer(GL_ARRAY_BUFFER, this->vertex_positions_vbo_id);
+	glVertexAttribPointer(this->attr_positions, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	glEnableVertexAttribArray(this->attr_normals);
+	glBindBuffer(GL_ARRAY_BUFFER, this->vertex_normals_vbo_id);
+	glVertexAttribPointer(this->attr_normals, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	glBindTexture(GL_TEXTURE_2D, this->texture_id);
+	glEnableVertexAttribArray(this->attr_texture);
+	glBindBuffer(GL_ARRAY_BUFFER, this->vertex_texture_vbo_id);
+	glVertexAttribPointer(this->attr_texture, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	glBindVertexArray(this->vao_id);
+
     // Declare your uniform variables that will be used in your shader
     int matrix_location = glGetUniformLocation(this->shaderProgramID, "model");
     int view_mat_location = glGetUniformLocation(this->shaderProgramID, "view");
     int proj_mat_location = glGetUniformLocation(this->shaderProgramID, "proj");
 
-	// Set the object color
-	int object_color = glGetUniformLocation(this->shaderProgramID, "object_color");
-	glUniform3f(object_color, 1.0f, 0.5f, 0.2f);
-
 	// Set the light positions
+	// TODO: Move this to the model loading stage
 	GLfloat* lights = new GLfloat[this->camera->lights.size() * 3];
-	for(int i = 0; i < this->camera->lights.size(); i++) {
+	for(unsigned int i = 0; i < this->camera->lights.size(); i++) {
 		lights[i * 3] = this->camera->lights[i][0];
 		lights[(i * 3) + 1] = this->camera->lights[i][1];
 		lights[(i * 3) + 2] = this->camera->lights[i][2];
@@ -179,6 +201,7 @@ void Actor::renderMesh() {
 	int light_positions = glGetUniformLocation(this->shaderProgramID, "light_positions");
 	glUniform3fv(light_positions, this->camera->lights.size(), &lights[0]);
 
+	// Pass the light positions
 	int n_lights = glGetUniformLocation(this->shaderProgramID, "n_lights");
 	GLint light_count = this->camera->lights.size();
 	glUniform1i(n_lights, light_count);
@@ -186,6 +209,10 @@ void Actor::renderMesh() {
 	// Pass the camera location
 	int camera_location = glGetUniformLocation(this->shaderProgramID, "camera_location");
 	glUniform3f(camera_location, -this->camera->location.x, -this->camera->location.y, -this->camera->location.z);
+
+	// Pass the material's specularity
+	float specularity = glGetUniformLocation(this->shaderProgramID, "specularity");
+	glUniform1f(specularity, this->specularity);
     
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::rotate(view, this->camera->rotation.y, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -225,12 +252,17 @@ glm::mat4 Actor::getTransform() {
     model = glm::rotate(model, this->rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
     model = glm::scale(model, this->scale);
 	
-	if(this->parent) {
+	if(this->parent != NULL) {
 		glm::mat4 parentTransform = this->parent->getTransform();
 		model = parentTransform * model;
 	}
 
 	return model;
+}
+
+// Empty function, made useful by subclasses
+void Actor::update(chrono::time_point current_time, float delta_seconds) {
+
 }
 
 unsigned int load_cubemap(vector<std::string> faces) {

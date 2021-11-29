@@ -9,16 +9,16 @@ in vec2 texture_coordinates;
 uniform sampler2D texture1;
 
 // Ambient variables
-vec3 ambient_light_color = vec3(0.5, 0.5, 0.5);
-float ambient_strength = 0.1;
+vec3 light_color = vec3(0.5, 0.5, 0.5);
+float ambient_strength = 0.5;
 
 // Diffuse variables
-vec3 diffuse_light_color = vec3(0.5, 0.5, 0.5);
+float diffuse_strength = 0.5;
 
 // Specular variables
 vec3 specular_light_color = vec3(1.0, 1.0, 1.0);
 float specular_strength = 1.0;
-float specular_coefficient = 100.0;
+uniform float specularity;
 
 // Lights
 uniform int n_lights;
@@ -32,28 +32,28 @@ void main(){
 	// Need to calculate lighting for all light sources
 	vec3 total_lighting = vec3(0.0, 0.0, 0.0);
 
-	for(int i = 0; i < n_lights; i++) {
-		// Ambient light
-		vec3 ambient = ambient_strength * ambient_light_color;
+	// Ambient light
+	vec3 ambient = ambient_strength * light_color;
 
+	for(int i = 0; i < n_lights; i++) {
 		// Diffuse light
 		vec3 norm = normalize(normal);
 		vec3 light_direction = normalize(light_positions[i] - fragment_position);
 		float diff = max(dot(norm, light_direction), 0.0);
-		vec3 diffuse = diff * diffuse_light_color;
+		vec3 diffuse = diff * (diffuse_strength * light_color);
 
 		// Specularity
 		vec3 view_dir = normalize(camera_location - fragment_position);
 		vec3 reflection_direction = reflect(-light_direction, norm);
 		float specular_dot = max(dot(view_dir, reflection_direction), 0.0);
-		float spec = pow(specular_dot, specular_coefficient);
-		vec3 specular = spec * specular_strength * specular_light_color;
+		float spec = pow(specular_dot, specularity);
+		vec3 specular = spec * specular_strength * light_color;
 
-		total_lighting += (specular + ambient + diffuse);
+		total_lighting += (specular + diffuse);
 	}
 
 	vec4 texture_color = texture(texture1, texture_coordinates);
-	FragColor = vec4(total_lighting, 1.0) * texture_color;
+	FragColor = vec4(total_lighting + ambient, 1.0) * texture_color;
 
-	// FragColor = vec4(final_lighting, 1.0);
+	// FragColor = vec4(final_lighting + ambient , 1.0);
 }

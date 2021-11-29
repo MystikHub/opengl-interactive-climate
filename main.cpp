@@ -38,7 +38,7 @@ float MESH_TRANSLATE_SPEED = 20;
 
 // vector<Actor> actors;
 Camera camera = Camera();
-Actor scene(&camera);
+vector<Actor*> actors;
 
 chrono::time_point last_time = chrono::high_resolution_clock::time_point::min();
 chrono::time_point start_time = chrono::high_resolution_clock::now();
@@ -146,11 +146,13 @@ void display() {
     // tell GL to only draw onto a pixel if the shape is closer to the viewer
     glEnable(GL_DEPTH_TEST); // enable depth-testing
     glDepthFunc(GL_LESS); // depth-testing interprets a smaller value as "closer"
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.8f, 0.8f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(shaderProgramID);
 
-    scene.renderMesh();
+    for(unsigned int i = 0; i < actors.size(); i++) {
+        actors[i]->renderMesh();
+    }
 
     glutSwapBuffers();
 }
@@ -163,12 +165,12 @@ void updateScene() {
 
     float delta = chrono::duration_cast<chrono::milliseconds>(curr_time - last_time).count();
     // float elapsed_time = chrono::duration_cast<chrono::milliseconds>(curr_time - start_time).count();
-    delta = delta * 0.001f;
+    delta_seconds = delta * 0.001f;
     last_time = curr_time;
 
     // Handle kb&m input for input x, y, and z (iterator i)
     for(int i = 0; i < 3; i++) {
-        camera.rotation[i] += input.camera_rotation[i] * MOUSE_SENSITIVITY * delta;
+        camera.rotation[i] += input.camera_rotation[i] * MOUSE_SENSITIVITY * delta_seconds;
 
         input.camera_rotation[i] = 0;
     }
@@ -215,14 +217,14 @@ void updateScene() {
     float x_change = sin(camera.rotation[0] + camera_direction_offset);
     float z_change = cos(camera.rotation[0] + camera_direction_offset);
 
-    camera.location[0] += -1 * x_change * CAMERA_SPEED * delta * moving;
-    camera.location[1] += input.camera_location[1] * CAMERA_SPEED * delta;
-    camera.location[2] += z_change * CAMERA_SPEED * delta * moving;
+    camera.location[0] += -1 * x_change * CAMERA_SPEED * delta_seconds * moving;
+    camera.location[1] += input.camera_location[1] * CAMERA_SPEED * delta_seconds;
+    camera.location[2] += z_change * CAMERA_SPEED * delta_seconds * moving;
 
-    // printf("\nangle: %f, xchange: %f, zchange: %f\n", camera.rotation[0], x_change, z_change);
-    // printf("camera_location: [%f, %f, %f]\n", camera_location[0], camera_location[1], camera_location[2]);
-    // printf("input.camera_location: [%d, %d, %d]\n", input.camera_location[0], input.camera_location[1], input.camera_location[2]);
-    // printf("input.camera_rotation: [%f, %f, %f]\n", camera.rotation[0], camera.rotation[1], camera.rotation[2]);
+    // Notify actors that the world has updated
+    for(int i = 0; i < actors.size(); i++) {
+        actors[i].update(curr_time, delta_seconds);
+    }
 
     // Draw the next frame
     glutPostRedisplay();
@@ -358,10 +360,90 @@ void init() {
     // Set up the shaders
     GLuint shaderProgramID = CompileShaders();
 
-    // load teapot mesh into a vertex buffer array
-    scene.shaderProgramID = shaderProgramID;
-    scene.loadMesh("models/scene.dae");
-    scene.setupBufferObjects();
+    Actor* floor = new Actor(&camera);
+    floor->shaderProgramID = shaderProgramID;
+    floor->diffuse_texture = "materials/textures/blue_floor_tiles_01_diff_4k.jpg";
+    floor->loadMesh("models/floor.dae");
+    floor->setupBufferObjects();
+    actors.push_back(floor);
+
+    Actor* benches_wood = new Actor(&camera);
+    benches_wood->shaderProgramID = shaderProgramID;
+    benches_wood->diffuse_texture = "materials/textures/weathered_brown_planks_diff_4k.jpg";
+    benches_wood->loadMesh("models/benches_wood.dae");
+    benches_wood->setupBufferObjects();
+    actors.push_back(benches_wood);
+
+    Actor* planter_and_walls = new Actor(&camera);
+    planter_and_walls->shaderProgramID = shaderProgramID;
+    planter_and_walls->diffuse_texture = "materials/textures/concrete_floor_worn_001_diff_4k.jpg";
+    planter_and_walls->loadMesh("models/planter_and_walls.dae");
+    planter_and_walls->setupBufferObjects();
+    actors.push_back(planter_and_walls);
+
+    Actor* bench_metal = new Actor(&camera);
+    bench_metal->shaderProgramID = shaderProgramID;
+    bench_metal->diffuse_texture = "materials/textures/Metal038_4K_Color.jpg";
+    bench_metal->loadMesh("models/bench_metal.dae");
+    bench_metal->specularity = 128.0f;
+    bench_metal->setupBufferObjects();
+    actors.push_back(bench_metal);
+
+    Actor* mountain = new Actor(&camera);
+    mountain->shaderProgramID = shaderProgramID;
+    mountain->diffuse_texture = "materials/textures/13_c.jpg";
+    mountain->loadMesh("models/mountain.dae");
+    mountain->setupBufferObjects();
+    actors.push_back(mountain);
+
+    Actor* bird = new Actor(&camera);
+    bird->shaderProgramID = shaderProgramID;
+    bird->diffuse_texture = "materials/textures/Metal038_4K_Color.jpg";
+    bird->loadMesh("models/bird.dae");
+    bird->setupBufferObjects();
+    // actors.push_back(bird);
+
+    Actor* deer_torso = new Actor(&camera);
+    deer_torso->shaderProgramID = shaderProgramID;
+    deer_torso->loadMesh("models/deer-torso.dae");
+    deer_torso->diffuse_texture = "materials/textures/doe-body-1.jpg";
+    deer_torso->location.z = 3.5;
+    deer_torso->setupBufferObjects();
+    actors.push_back(deer_torso);
+
+    Actor* deer_leg_upper = new Actor(&camera);
+    deer_leg_upper->shaderProgramID = shaderProgramID;
+    deer_leg_upper->loadMesh("models/deer-leg-upper.dae");
+    deer_leg_upper->diffuse_texture = "materials/textures/doe-body-2.jpg";
+    deer_leg_upper->parent = deer_torso;
+    deer_leg_upper->location = glm::vec3(-0.112856f, 0.689876f, 0.280958f);
+    deer_leg_upper->setupBufferObjects();
+    actors.push_back(deer_leg_upper);
+
+    Actor* deer_leg_lower = new Actor(&camera);
+    deer_leg_lower->shaderProgramID = shaderProgramID;
+    deer_leg_lower->loadMesh("models/deer-leg-lower.dae");
+    deer_leg_lower->diffuse_texture = "materials/textures/doe-body-3.jpg";
+    deer_leg_lower->parent = deer_leg_upper;
+    deer_leg_lower->location = glm::vec3(0.019246f, -0.265585f, 0.020285f);
+    deer_leg_lower->setupBufferObjects();
+    actors.push_back(deer_leg_lower);
+
+    Actor* deer_head = new Actor(&camera);
+    deer_head->shaderProgramID = shaderProgramID;
+    deer_head->loadMesh("models/deer-head.dae");
+    deer_head->diffuse_texture = "materials/textures/doe-head.jpg";
+    deer_head->parent = deer_torso;
+    deer_head->location = glm::vec3(0.0f, 0.905768f, 0.437629f);
+    deer_head->setupBufferObjects();
+    actors.push_back(deer_head);
+
+    Actor* planter_soil = new Actor(&camera);
+    planter_soil->shaderProgramID = shaderProgramID;
+    planter_soil->loadMesh("models/planter_soil.dae");
+    planter_soil->diffuse_texture = "materials/textures/dry_mud_field_001_diff_4k.jpg";
+    planter_soil->setupBufferObjects();
+    actors.push_back(planter_soil);
 
     camera.location.y = -1.6;
 }
