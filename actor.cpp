@@ -2,6 +2,7 @@
 #include "camera.hpp"
 
 #include <chrono>
+#include <stdlib.h>
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
@@ -29,6 +30,12 @@ Actor::Actor(Camera* camera) {
 	this->specularity = 64;
 	this->diffuse_texture = "";
 	this->actor_type = ActorType::Default;
+
+	this->prev_direction = glm::vec3(0.0f, 0.0f, 0.0f);
+	this->prev_direction.x = rand();
+	this->prev_direction.y = rand();
+	this->prev_direction.z = rand();
+	this->prev_direction = glm::normalize(this->prev_direction);
 }
 
 void Actor::loadMesh(string file_name) {

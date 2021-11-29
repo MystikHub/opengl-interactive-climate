@@ -156,7 +156,9 @@ void display() {
     glUseProgram(shaderProgramID);
 
     for(unsigned int i = 0; i < actors.size(); i++) {
-        actors[i]->renderMesh();
+        if(actors[i]->actor_type != ActorType::CrowdObstacle) {
+            actors[i]->renderMesh();
+        }
     }
 
     glutSwapBuffers();
@@ -282,9 +284,9 @@ void keyDownHandler(unsigned char key, int x, int y) {
         // D: X+
         case 'd': input.camera_location[0] = 1; break;
         // Q: Z-
-        case 'q': input.camera_location[1] = -1; break;
+        case 'e': input.camera_location[1] = -1; break;
         // E: Z+
-        case 'e': input.camera_location[1] = 1; break;
+        case 'q': input.camera_location[1] = 1; break;
         // Uniform scale
         case 'r':
             input.scale[0] = 1;
@@ -491,6 +493,7 @@ void init() {
             bird->mesh = bird_model;
         }
         bird->diffuse_texture = "materials/textures/Metal038_4K_Color.jpg";
+        bird->actor_type = ActorType::BirdCrowd;
         bird->setupBufferObjects();
 
         // Bird starting location
@@ -501,6 +504,12 @@ void init() {
         actors.push_back(bird);
     }
 
+    // Add an obstacle to the crowd
+    Actor* obstacle = new Actor(&camera);
+    obstacle->location = glm::vec3(0.0f, 8.0f, 5.0f);
+    obstacle->actor_type = ActorType::CrowdObstacle;
+    actors.push_back(obstacle);
+    
     camera.location.y = -1.6;
 }
 
@@ -509,11 +518,14 @@ int main(int argc, char** argv){
     // Set up the window
     glutInit(&argc, argv);
     // glutInitContextVersion(3, 3);
-    // glutInitContextFlags(GLUT_DEBUG);
-    // glutInitContextFlags(GLUT_FORWARD_COMPATIBLE | GLUT_DEBUG);
-    glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB);
+    glutSetOption(GLUT_MULTISAMPLE, 8);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
     glutInitWindowSize(camera.width, camera.height);
     glutCreateWindow("OpenGL simple hierarchy");
+
+    // MSAA
+    glEnable(GL_MULTISAMPLE);
+    glHint(GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST);
 
     // Tell glut where the display function is
     glutDisplayFunc(display);

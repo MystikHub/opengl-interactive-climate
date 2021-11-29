@@ -11,4 +11,4 @@ build:
 	gcc ./*.cpp \
 		./actors/*.cpp\
 		-lGLEW -lGL -lglut -lstdc++ -lm -lassimp\
-		-g -o application -Wall
+		-g -o application # -Wall

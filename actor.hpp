@@ -22,7 +22,8 @@ typedef struct {
 
 enum ActorType {
     Default,
-    BirdCrowd
+    BirdCrowd,
+    CrowdObstacle
 };
 
 class Actor {
@@ -53,6 +54,7 @@ public:
     Actor(Camera* camera);
     Camera* camera;
     ActorType actor_type;
+    glm::vec3 prev_direction;
 
     virtual void update(float current_time_seconds, float delta_seconds, vector<Actor*> actors);
     void loadMesh(string mesh_path);
