@@ -478,7 +478,7 @@ void init() {
 
     // Bounds for birds' starting positions
     // Box is 10x10x7m
-    glm::vec3 birds_start = glm::vec3(-5.0f, 7.0f, -5.0f);
+    glm::vec3 birds_start = glm::vec3(-5.0f, 5.0f, -5.0f);
     glm::vec3 birds_end = glm::vec3(5.0f, 1.0f, 5.0f);
     srand(0);               // Debug seed, TODO: remove before submission
 
@@ -509,6 +509,24 @@ void init() {
     obstacle->location = glm::vec3(0.0f, 8.0f, 5.0f);
     obstacle->actor_type = ActorType::CrowdObstacle;
     actors.push_back(obstacle);
+
+    printf("Loading tree bark...");
+    Actor* tree_bark = new Actor(&camera);
+    tree_bark->shaderProgramID = shaderProgramID;
+    tree_bark->loadMesh("models/tree.dae");
+    tree_bark->diffuse_texture = "materials/textures/bark_brown_02_diff_4k.jpg";
+    tree_bark->specularity = 4.0f;
+    tree_bark->setupBufferObjects();
+    actors.push_back(tree_bark);
+
+    printf("Loading tree leaves...");
+    Actor* tree_leaves = new Actor(&camera);
+    tree_leaves->shaderProgramID = shaderProgramID;
+    tree_leaves->loadMesh("models/tree-leaves.dae");
+    tree_leaves->diffuse_texture = "materials/textures/13_c.jpg";
+    tree_leaves->specularity = 4.0f;
+    tree_leaves->setupBufferObjects();
+    actors.push_back(tree_leaves);
     
     camera.location.y = -1.6;
 }
@@ -521,7 +539,7 @@ int main(int argc, char** argv){
     glutSetOption(GLUT_MULTISAMPLE, 8);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
     glutInitWindowSize(camera.width, camera.height);
-    glutCreateWindow("OpenGL simple hierarchy");
+    glutCreateWindow("OpenGL interactive climate change");
 
     // MSAA
     glEnable(GL_MULTISAMPLE);
