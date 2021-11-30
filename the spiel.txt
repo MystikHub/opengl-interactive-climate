@@ -1,0 +1,17 @@
+Idea behind the scene:
+In a future where most animals have gone extinct only robots exist in zoos
+
+Features:
+Crowds
+Textured materials
+- Different specularity coefficient
+Hierarchical creature
+
+Great models made by me
+- Deer found on turbosquid
+- Trees made with blender tree generator addon
+Procedural terrain
+- Made with Geovox
+Advanced lighting
+- Light attenuation
+- Directional sun light

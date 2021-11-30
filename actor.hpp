@@ -59,7 +59,7 @@ public:
     virtual void update(float current_time_seconds, float delta_seconds, vector<Actor*> actors);
     void loadMesh(string mesh_path);
     void setupBufferObjects();
-    void renderMesh();
+    void renderMesh(bool point_lights_toggle);
     glm::mat4 getTransform();
 };
 

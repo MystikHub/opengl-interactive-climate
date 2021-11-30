@@ -18,7 +18,7 @@ void Bird::update(float current_time_seconds, float delta_seconds, vector<Actor*
     // Crowd movement is a combination of three vectors
     glm::vec3 collision_avoidance = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 velocity_matching = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 flock_centering = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 flock_centroid = glm::vec3(0.0f, 0.0f, 0.0f);
 
     // First, make sure we don't bump into obstacles or other bird members
     // Get a list of all birds within a pre-defined distance
@@ -74,7 +74,7 @@ void Bird::update(float current_time_seconds, float delta_seconds, vector<Actor*
     for(unsigned int i = 0; i < close_birds.size(); i++) {
         total_positions += close_birds[i]->location;
     }
-    glm::vec3 flock_centroid = total_positions / (float) close_birds.size();
+    flock_centroid = total_positions / (float) close_birds.size();
     glm::vec3 to_flock_centroid = flock_centroid - this->location;
 
     movement_vector += (0.3f * collision_avoidance) + (0.3f * velocity_matching) + (0.3f * to_flock_centroid);

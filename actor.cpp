@@ -176,7 +176,7 @@ void Actor::setupBufferObjects() {
 	// unsigned int cubemap_texture = load_cubemap(faces);
 }
 
-void Actor::renderMesh() {
+void Actor::renderMesh(bool point_lights_toggle) {
 	// Enable the data we need
 	glEnableVertexAttribArray(this->attr_positions);
 	glBindBuffer(GL_ARRAY_BUFFER, this->vertex_positions_vbo_id);
@@ -218,8 +218,12 @@ void Actor::renderMesh() {
 	glUniform3f(camera_location, -this->camera->location.x, -this->camera->location.y, -this->camera->location.z);
 
 	// Pass the material's specularity
-	float specularity = glGetUniformLocation(this->shaderProgramID, "specularity");
+	int specularity = glGetUniformLocation(this->shaderProgramID, "specularity");
 	glUniform1f(specularity, this->specularity);
+
+	// Global enable/disable point lights
+	int point_lights_on = glGetUniformLocation(this->shaderProgramID, "point_lights_on");
+	glUniform1i(point_lights_on, (int) point_lights_toggle);
     
     glm::mat4 view = glm::mat4(1.0f);
     view = glm::rotate(view, this->camera->rotation.y, glm::vec3(1.0f, 0.0f, 0.0f));

@@ -44,6 +44,10 @@ float MESH_TRANSLATE_SPEED = 20;
 // vector<Actor> actors;
 Camera camera = Camera();
 vector<Actor*> actors;
+bool update_world = false;
+bool increase_specularity = false;
+bool decrease_specularity = false;
+bool point_lights_on = true;
 
 chrono::time_point last_time = chrono::high_resolution_clock::time_point::min();
 chrono::time_point start_time = chrono::high_resolution_clock::now();
@@ -157,7 +161,7 @@ void display() {
 
     for(unsigned int i = 0; i < actors.size(); i++) {
         if(actors[i]->actor_type != ActorType::CrowdObstacle) {
-            actors[i]->renderMesh();
+            actors[i]->renderMesh(point_lights_on);
         }
     }
 
@@ -233,7 +237,16 @@ void updateScene() {
 
     // Notify actors that the world has updated
     for(unsigned int i = 0; i < actors.size(); i++) {
-        actors[i]->update(curr_time_seconds, delta_seconds, actors);
+        if(increase_specularity) {
+            actors[i]->specularity *= 2;
+            increase_specularity = false;
+        } else if(decrease_specularity) {
+            actors[i]->specularity /= 2;
+            decrease_specularity = false;
+        }
+        if(update_world) {
+            actors[i]->update(curr_time_seconds, delta_seconds, actors);
+        }
     }
 
     // Draw the next frame
@@ -302,6 +315,18 @@ void keyDownHandler(unsigned char key, int x, int y) {
         case 'f':
             camera.location = glm::vec3(0.0, 0.0, -40.0);
             camera.rotation = glm::vec3(0.0, 0.0, 0.0);
+            break;
+        case ' ':
+            update_world = !update_world;
+            break;
+        case '+':
+            increase_specularity = true;
+            break;
+        case '-':
+            decrease_specularity = true;
+            break;
+        case 'l':
+            point_lights_on = !point_lights_on;
             break;
         // Press ESC to quit
         case 27: exit(0); break;
@@ -527,6 +552,24 @@ void init() {
     tree_leaves->specularity = 4.0f;
     tree_leaves->setupBufferObjects();
     actors.push_back(tree_leaves);
+
+    // printf("Loading forest wood...");
+    // Actor* forest_wood = new Actor(&camera);
+    // forest_wood->shaderProgramID = shaderProgramID;
+    // forest_wood->loadMesh("models/forest-wood.dae");
+    // forest_wood->diffuse_texture = "materials/textures/bark_brown_02_diff_4k.jpg";
+    // forest_wood->specularity = 4.0f;
+    // forest_wood->setupBufferObjects();
+    // actors.push_back(forest_wood);
+
+    // printf("Loading forest leaves...");
+    // Actor* forest_leaves = new Actor(&camera);
+    // forest_leaves->shaderProgramID = shaderProgramID;
+    // forest_leaves->loadMesh("models/forest-leaves.dae");
+    // forest_leaves->diffuse_texture = "materials/textures/13_c.jpg";
+    // forest_leaves->specularity = 4.0f;
+    // forest_leaves->setupBufferObjects();
+    // actors.push_back(forest_leaves);
     
     camera.location.y = -1.6;
 }
